@@ -1,10 +1,12 @@
 #!/bin/bash
 
+# path for executables
+export PATH="/usr/sbin/:/usr/bin/"
 # iptables logging limit
 LIMIT="10/minute"
 
 # entries count
-current_entries=$(/usr/sbin/ipset --list | wc -l)
+current_entries=$(ipset --list | wc -l)
 
 # try to load config file
 # it should contain one blacklist URL per line
@@ -32,10 +34,10 @@ fi
 
 link_set() {
 	if [ "$3" = "log" ]; then
-		/usr/sbin/iptables -A "$1" -m set --match-set "$2" src,dst -m limit --limit "$LIMIT" -j LOG --log-prefix "BLOCK $2 "
+		iptables -A "$1" -m set --match-set "$2" src,dst -m limit --limit "$LIMIT" -j LOG --log-prefix "BLOCK $2 "
 	fi
-	/usr/sbin/iptables -A "$1" -m set --match-set "$2" src -j DROP
-	/usr/sbin/iptables -A "$1" -m set --match-set "$2" dst -j DROP
+	iptables -A "$1" -m set --match-set "$2" src -j DROP
+	iptables -A "$1" -m set --match-set "$2" dst -j DROP
 }
 
 # This is how it will look like on the server
@@ -53,12 +55,12 @@ link_set() {
 blocklist_chain_name=blocklists
 
 # check for dependencies - ipset and curl
-if [ -z "$(which /usr/sbin/ipset 2>/dev/null)" ]; then
+if [ -z "$(which ipset 2>/dev/null)" ]; then
 	echo "Cannot find ipset"
 	echo "Run \"apt-get install ipset\" (Debian/Ubuntu) or \"yum install ipset\" (RedHat/CentOS/Fedora) or \"opkg install ipset\" (OpenWRT/LEDE)"
 	exit 1
 fi
-if [ -z "$(which /usr/bin/curl 2>/dev/null)" ]; then
+if [ -z "$(which curl 2>/dev/null)" ]; then
 	echo "Cannot find curl"
 	echo "Run \"apt-get install curl\" (Debian/Ubuntu) or \"yum install curl\" (RedHat/CentOS/Fedora) or \"opkg install curl\" (OpenWRT/LEDE)"
 	exit 1
@@ -79,27 +81,27 @@ else
 fi
 
 # create main blocklists chain
-if ! /usr/sbin/iptables -nL | grep -q "Chain ${blocklist_chain_name}"; then
-	/usr/sbin/iptables -N ${blocklist_chain_name}
+if ! iptables -nL | grep -q "Chain ${blocklist_chain_name}"; then
+	iptables -N ${blocklist_chain_name}
 fi
 
 # inject references to blocklist in the beginning of input and forward chains
-if ! /usr/sbin/iptables -nL ${INPUT} | grep -q ${blocklist_chain_name}; then
-	/usr/sbin/iptables -I "${INPUT}" 1 "${IN_OPT}" -j ${blocklist_chain_name}
+if ! iptables -nL ${INPUT} | grep -q ${blocklist_chain_name}; then
+	iptables -I "${INPUT}" 1 "${IN_OPT}" -j ${blocklist_chain_name}
 fi
-if ! /usr/sbin/iptables -nL ${FORWARD} | grep -q ${blocklist_chain_name}; then
-	/usr/sbin/iptables -I ${FORWARD} 1 "${IN_OPT}" -j ${blocklist_chain_name}
+if ! iptables -nL ${FORWARD} | grep -q ${blocklist_chain_name}; then
+	iptables -I ${FORWARD} 1 "${IN_OPT}" -j ${blocklist_chain_name}
 fi
 
 # flush the chain referencing blacklists, they will be restored in a second
-/usr/sbin/iptables -F ${blocklist_chain_name}
+iptables -F ${blocklist_chain_name}
 
 # create the "manual" blacklist set
 # this can be populated manually using ipset command:
 # ipset add manual-blacklist a.b.c.d
 set_name="manual-blacklist"
-if ! /usr/sbin/ipset list | grep -q "Name: ${set_name}"; then
-	/usr/sbin/ipset create "${set_name}" hash:net
+if ! ipset list | grep -q "Name: ${set_name}"; then
+	ipset create "${set_name}" hash:net
 fi
 link_set "${blocklist_chain_name}" "${set_name}" "$1"
 
@@ -113,7 +115,7 @@ for url in $URLS; do
 
 	# download the blocklist
 	set_name=$(echo "$url" | awk -F/ '{print substr($3,0,21);}') # set name is derived from source URL hostname
-	/usr/bin/curl -L -v -s ${COMPRESS_OPT} -k "$url" >"${unsorted_blocklist}" 2>"${headers}"
+	curl -L -v -s ${COMPRESS_OPT} -k "$url" >"${unsorted_blocklist}" 2>"${headers}"
 
 	# this is required for blocklist.de that sends compressed content regardless of asked or not
 	if [ -z "$COMPRESS_OPT" ]; then
@@ -149,8 +151,8 @@ for url in $URLS; do
 	new_list_size=$(wc -l "${sorted_blocklist}" | awk '{print $1;}')
 	hash_size=$(("$new_list_size" / 2))
 
-	if ! /usr/sbin/ipset -q list "${set_name}" >/dev/null; then
-		/usr/sbin/ipset create "${set_name}" hash:net family inet
+	if ! ipset -q list "${set_name}" >/dev/null; then
+		ipset create "${set_name}" hash:net family inet
 	fi
 
 	# start writing new set file
@@ -168,7 +170,7 @@ for url in $URLS; do
 	echo "destroy ${tmp_set_name}" >>"${new_set_file}"
 
 	# actually execute the set update
-	/usr/sbin/ipset -! -q restore <"${new_set_file}"
+	ipset -! -q restore <"${new_set_file}"
 
 	link_set "${blocklist_chain_name}" "${set_name}" "$1"
 
