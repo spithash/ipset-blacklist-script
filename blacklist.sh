@@ -32,10 +32,10 @@ fi
 
 link_set() {
 	if [ "$3" = "log" ]; then
-		iptables -A "$1" -m set --match-set "$2" src,dst -m limit --limit "$LIMIT" -j LOG --log-prefix "BLOCK $2 "
+		/usr/sbin/iptables -A "$1" -m set --match-set "$2" src,dst -m limit --limit "$LIMIT" -j LOG --log-prefix "BLOCK $2 "
 	fi
-	iptables -A "$1" -m set --match-set "$2" src -j DROP
-	iptables -A "$1" -m set --match-set "$2" dst -j DROP
+	/usr/sbin/iptables -A "$1" -m set --match-set "$2" src -j DROP
+	/usr/sbin/iptables -A "$1" -m set --match-set "$2" dst -j DROP
 }
 
 # This is how it will look like on the server
@@ -79,20 +79,20 @@ else
 fi
 
 # create main blocklists chain
-if ! iptables -nL | grep -q "Chain ${blocklist_chain_name}"; then
-	iptables -N ${blocklist_chain_name}
+if ! /usr/sbin/iptables -nL | grep -q "Chain ${blocklist_chain_name}"; then
+	/usr/sbin/iptables -N ${blocklist_chain_name}
 fi
 
 # inject references to blocklist in the beginning of input and forward chains
-if ! iptables -nL ${INPUT} | grep -q ${blocklist_chain_name}; then
-	iptables -I "${INPUT}" 1 "${IN_OPT}" -j ${blocklist_chain_name}
+if ! /usr/sbin/iptables -nL ${INPUT} | grep -q ${blocklist_chain_name}; then
+	/usr/sbin/iptables -I "${INPUT}" 1 "${IN_OPT}" -j ${blocklist_chain_name}
 fi
-if ! iptables -nL ${FORWARD} | grep -q ${blocklist_chain_name}; then
-	iptables -I ${FORWARD} 1 "${IN_OPT}" -j ${blocklist_chain_name}
+if ! /usr/sbin/iptables -nL ${FORWARD} | grep -q ${blocklist_chain_name}; then
+	/usr/sbin/iptables -I ${FORWARD} 1 "${IN_OPT}" -j ${blocklist_chain_name}
 fi
 
 # flush the chain referencing blacklists, they will be restored in a second
-iptables -F ${blocklist_chain_name}
+/usr/sbin/iptables -F ${blocklist_chain_name}
 
 # create the "manual" blacklist set
 # this can be populated manually using ipset command:
