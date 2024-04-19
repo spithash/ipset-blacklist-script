@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# IP blacklisting script for Linux servers
-# Pawel Krawczyk 2014-2015
-# Initial Author https://github.com/kravietz/
-# Maintainer Stathis Xantinidis https://github.com/spithash/
-
 # iptables logging limit
 LIMIT="10/minute"
 
