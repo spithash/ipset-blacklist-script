@@ -1,4 +1,4 @@
-blacklist-scripts
+ipset blacklist script
 =================
 This is a collection of shell scripts that are intended to block Linux systems and OpenWRT routers from known sources of malicious traffic. These scripts use `iptables` with highly efficient `ipset` module to check incoming traffic against blacklists populated from publicly available sources.
 
@@ -6,6 +6,8 @@ This is a collection of shell scripts that are intended to block Linux systems a
 
 
 **Note:** This script is a quick hack suitable primarily for embedded devices (OpenWRT, LEDE) rather than a complete solution for server. For the latter, have a look at [FireHOL](http://firehol.org/) and its excellent [FireHOL IP Lists](http://iplists.firehol.org/) add-on. Have a look at the **FireHOL** section further down.
+
+Special thanks to the Initial Author of this script Pawel Krawczyk https://github.com/kravietz/blacklist-scripts - That repo is now archived so I decided to clone it because I find it useful.
 
 ## Available blacklists
 If you decide to use this script, these are the blacklists available by default:
@@ -171,3 +173,4 @@ interface eth0 world4
     server4 ssh deny src4 ipset:manual-blacklist
     ...
 ```
+
