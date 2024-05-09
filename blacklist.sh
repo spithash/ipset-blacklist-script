@@ -80,6 +80,7 @@ else
 	FORWARD=FORWARD
 fi
 
+# Ensuring the variable always holds a value (this avoids 'Bad Argument' iptables errors)
 if [ -z "${IN_OPT}" ]; then
 	IN_OPT=""
 fi
