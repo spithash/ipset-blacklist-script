@@ -80,6 +80,10 @@ else
 	FORWARD=FORWARD
 fi
 
+if [ -z "${IN_OPT}" ]; then
+	IN_OPT=""
+fi
+
 # create main blocklists chain
 if ! iptables -nL | grep -q "Chain ${blocklist_chain_name}"; then
 	iptables -N ${blocklist_chain_name}
